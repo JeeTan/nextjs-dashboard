@@ -88,13 +88,22 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
+/**
+ * 异步获取经过过滤的发票信息。
+ * 
+ * @param query 搜索查询字符串，用于匹配发票或客户信息。
+ * @param currentPage 当前显示的页码，用于分页。
+ * @returns 返回一个Promise，解析为发票对象数组。
+ */
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ) {
+  // 计算分页偏移量
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
+    // 执行SQL查询，获取匹配的发票信息
     const invoices = await sql<InvoicesTable>`
       SELECT
         invoices.id,
@@ -116,15 +125,27 @@ export async function fetchFilteredInvoices(
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
+    // 返回查询结果中的行数据
     return invoices.rows;
   } catch (error) {
+    // 打印数据库错误信息
     console.error('Database Error:', error);
+    // 抛出获取发票失败的错误
     throw new Error('Failed to fetch invoices.');
   }
 }
 
+/**
+ * 异步获取发票页面总数。
+ * 根据提供的查询字符串对发票和客户表进行查询，计算总页数。
+ * 
+ * @param query 用户输入的查询字符串，用于匹配客户名称、电子邮件、
+ *              发票金额、日期或状态。
+ * @returns 返回发票页面的总页数。
+ */
 export async function fetchInvoicesPages(query: string) {
   try {
+    // 执行SQL查询，计算满足查询条件的发票总数。
     const count = await sql`SELECT COUNT(*)
     FROM invoices
     JOIN customers ON invoices.customer_id = customers.id
@@ -136,9 +157,11 @@ export async function fetchInvoicesPages(query: string) {
       invoices.status ILIKE ${`%${query}%`}
   `;
 
+    // 根据总数和每页项数计算总页数，并返回。
     const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
     return totalPages;
   } catch (error) {
+    // 捕获数据库错误，打印错误信息，并抛出获取发票总数失败的错误。
     console.error('Database Error:', error);
     throw new Error('Failed to fetch total number of invoices.');
   }
